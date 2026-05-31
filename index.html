@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceCX AI - Voice-First E-Commerce Assistant</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0b0d19 0%, #15112e 50%, #070510 100%);
+            --glass-bg: rgba(22, 21, 44, 0.6);
+            --glass-bg-hover: rgba(32, 31, 60, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-glow: rgba(124, 77, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+            
+            --color-primary: #7c4dff;
+            --color-secondary: #00e5ff;
+            --color-accent: #ff007f;
+            --color-success: #00e676;
+            --color-warning: #ffb300;
+            
+            --text-primary: #f0f0f7;
+            --text-secondary: #9ea0bf;
+            --text-muted: #6b6e8f;
+            
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-primary) var(--glass-bg);
+        }
+
+        /* Custom Scrollbar */
+        *::-webkit-scrollbar {
+            width: 6px;
+        }
+        *::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        *::-webkit-scrollbar-thumb {
+            background-color: var(--color-primary);
+            border-radius: 20px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Header Navigation */
+        header {
+            padding: 20px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 13, 25, 0.8);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--color-secondary), var(--color-primary), var(--color-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            -webkit-text-fill-color: initial;
+            color: var(--color-secondary);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+
+        .badge-mode {
+            background: rgba(124, 77, 255, 0.15);
+            border: 1px solid var(--glass-border-glow);
+            color: var(--color-secondary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Main Workspace */
+        .workspace {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 24px;
+            padding: 24px 5%;
+            flex-grow: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* LEFT COLUMN: Voice Assistant Hub */
+        .voice-hub {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: fit-content;
+        }
+
+        /* The Aura Sphere (Visualizer) */
+        .visualizer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .aura-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .aura-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--color-primary) 0%, rgba(124, 77, 255, 0) 70%);
+            opacity: 0.6;
+            filter: blur(15px);
+            transition: all 0.5s ease;
+        }
+
+        .aura-orb {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 0 40px rgba(124, 77, 255, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .aura-ring {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            border: 2px dashed rgba(0, 229, 255, 0.4);
+            border-radius: 50%;
+            z-index: 1;
+            animation: spin 12s linear infinite;
+            transition: all 0.5s ease;
+        }
+
+        /* States classes */
+        /* IDLE STATE */
+        .state-idle .aura-orb {
+            animation: pulse-idle 3s ease-in-out infinite;
+            background: linear-gradient(135deg, var(--color-primary), #4a148c);
+            box-shadow: 0 0 30px rgba(124, 77, 255, 0.4);
+        }
+        .state-idle .aura-glow {
+            background: radial-gradient(circle, var(--color-primary) 0%, rgba(124, 77, 255, 0) 75%);
+            opacity: 0.4;
+        }
+
+        /* LISTENING STATE */
+        .state-listening .aura-orb {
+            animation: pulse-listening 1.2s ease-in-out infinite alternate;
+            background: linear-gradient(135deg, var(--color-secondary), #006064);
+            box-shadow: 0 0 45px rgba(0, 229, 255, 0.8);
+            transform: scale(1.08);
+        }
+        .state-listening .aura-glow {
+            background: radial-gradient(circle, var(--color-secondary) 0%, rgba(0, 229, 255, 0) 75%);
+            opacity: 0.8;
+            filter: blur(10px);
+        }
+        .state-listening .aura-ring {
+            border: 2px solid var(--color-secondary);
+            animation: ripple-listening 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+        }
+
+        /* THINKING STATE */
+        .state-thinking .aura-orb {
+            background: linear-gradient(135deg, #311b92, var(--color-primary));
+            box-shadow: 0 0 35px rgba(124, 77, 255, 0.5);
+            animation: pulse-thinking 1.5s ease-in-out infinite alternate;
+        }
+        .state-thinking .aura-ring {
+            border: 3px dotted var(--color-secondary);
+            border-top: 3px solid var(--color-accent);
+            width: 140px;
+            height: 140px;
+            animation: spin 1.5s linear infinite;
+        }
+
+        /* SPEAKING STATE */
+        .state-speaking .aura-orb {
+            animation: pulse-speaking 0.8s ease-in-out infinite alternate;
+            background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+            box-shadow: 0 0 45px rgba(255, 0, 127, 0.8);
+            transform: scale(1.05);
+        }
+        .state-speaking .aura-glow {
+            background: radial-gradient(circle, var(--color-accent) 0%, rgba(255, 0, 127, 0) 75%);
+            opacity: 0.7;
+        }
+        .state-speaking .aura-ring {
+            border: 2px dashed var(--color-accent);
+            animation: spin 6s linear infinite reverse;
+        }
+
+        /* Voice State Animations */
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse-idle {
+            0% { transform: scale(1); box-shadow: 0 0 30px rgba(124, 77, 255, 0.3); }
+            50% { transform: scale(1.04); box-shadow: 0 0 40px rgba(124, 77, 255, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 0 30px rgba(124, 77, 255, 0.3); }
+        }
+        @keyframes pulse-listening {
+            0% { transform: scale(1.05); }
+            100% { transform: scale(1.15); }
+        }
+        @keyframes ripple-listening {
+            0% { transform: scale(0.9); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+        @keyframes pulse-thinking {
+            0% { transform: scale(1.02); }
+            100% { transform: scale(1.08); }
+        }
+        @keyframes pulse-speaking {
+            0% { transform: scale(1.02); box-shadow: 0 0 30px rgba(255, 0, 127, 0.5); }
+            100% { transform: scale(1.1); box-shadow: 0 0 50px rgba(255, 0, 127, 0.9); }
+        }
+
+        .mic-icon {
+            font-size: 32px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+        }
+
+        .status-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Mic Button Controller */
+        .control-panel {
+            display: flex;
+            justify-content: center;
+            margin-top: 5px;
+        }
+
+        .btn-mic {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(124, 77, 255, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-mic:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 0, 127, 0.5);
+            background: linear-gradient(135deg, #8c5dff, #ff2a9d);
+        }
+
+        .btn-mic:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-mic.recording {
+            background: linear-gradient(135deg, #d50000, #ff1744);
+            box-shadow: 0 4px 20px rgba(255, 23, 68, 0.5);
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 23, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
+        }
+
+        /* Live Dialogue Panel */
+        .dialogue-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dialogue-title {
+            font-family: var(--font-display);
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .transcript-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 80px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .transcript-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Suggestions Commands */
+        .suggestions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .suggestion-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(124, 77, 255, 0.15);
+            border-color: var(--glass-border-glow);
+            color: var(--color-secondary);
+            transform: translateY(-1px);
+        }
+
+        /* AI Debug Logger */
+        .debug-logger {
+            margin-top: auto;
+        }
+
+        .debug-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .debug-item {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .debug-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .debug-val {
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .debug-val.success { color: var(--color-success); }
+        .debug-val.info { color: var(--color-secondary); }
+        .debug-val.warning { color: var(--color-warning); }
+
+        .debug-val-wide {
+            grid-column: span 2;
+        }
+
+        /* RIGHT COLUMN: E-commerce Panel */
+        .ecommerce-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Top controls for E-commerce */
+        .ecom-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .ecom-title {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ecom-title i {
+            color: var(--color-primary);
+        }
+
+        /* Category Filter Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            width: 100%;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 15px rgba(124, 77, 255, 0.4);
+        }
+
+        /* Content Grid */
+        .ecom-content {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1300px) {
+            .ecom-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Product Showcase */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+            height: fit-content;
+        }
+
+        .product-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--glass-border-glow);
+            background: var(--glass-bg-hover);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .product-card.filtered-out {
+            display: none !important;
+        }
+
+        .product-card.action-highlight {
+            animation: highlight-pulse 1s ease-in-out;
+            border-color: var(--color-secondary) !important;
+        }
+
+        @keyframes highlight-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            50% { box-shadow: 0 0 20px 5px rgba(0, 229, 255, 0.5); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+
+        .product-image-container {
+            height: 140px;
+            background: linear-gradient(135deg, rgba(124, 77, 255, 0.1), rgba(0, 229, 255, 0.05));
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-icon {
+            font-size: 52px;
+            background: linear-gradient(45deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.85;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover .product-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(11, 13, 25, 0.8);
+            border: 1px solid var(--glass-border);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--color-secondary);
+        }
+
+        .product-info {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .product-name {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .product-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .product-price {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-secondary);
+        }
+
+        .btn-add-cart {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-add-cart:hover {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 10px rgba(124, 77, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        /* Cart Sidebar Drawer Panel */
+        .cart-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cart-card {
+            display: flex;
+            flex-direction: column;
+            max-height: 480px;
+            min-height: 380px;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .cart-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cart-badge {
+            background: var(--color-accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cart-items-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin: 12px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 4px;
+        }
+
+        .cart-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 13px;
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cart-empty i {
+            font-size: 32px;
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .cart-item {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slide-in-right {
+            0% { transform: translateX(30px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        .cart-item-icon {
+            font-size: 20px;
+            color: var(--color-secondary);
+            background: rgba(0, 229, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cart-item-details {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .cart-item-name {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cart-item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+
+        .cart-item-qty {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .cart-item-price {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--color-secondary);
+        }
+
+        .btn-remove-item {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .btn-remove-item:hover {
+            color: var(--color-accent);
+        }
+
+        .cart-summary {
+            border-top: 1px solid var(--glass-border);
+            padding-top: 14px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .summary-label {
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        .btn-checkout {
+            background: linear-gradient(135deg, var(--color-primary), #00e5ff);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-checkout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.4);
+            background: linear-gradient(135deg, #8c5dff, #00b8d4);
+        }
+
+        .btn-checkout:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid var(--glass-border);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Recent Orders Section */
+        .orders-card {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .orders-title {
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .orders-title i {
+            color: var(--color-success);
+        }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .order-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .order-id {
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .order-date {
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-size: 10px;
+        }
+
+        .order-total {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--color-secondary);
+        }
+
+        .order-status {
+            background: rgba(0, 230, 118, 0.1);
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            color: var(--color-success);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .order-status.processing {
+            background: rgba(255, 179, 0, 0.1);
+            border: 1px solid rgba(255, 179, 0, 0.3);
+            color: var(--color-warning);
+        }
+
+        /* Interactive Speech Wave overlay (Subtle, responsive animation) */
+        .speech-caption-overlay {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(11, 13, 25, 0.9);
+            border: 1px solid var(--glass-border-glow);
+            padding: 12px 24px;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            max-width: 90%;
+            width: 500px;
+            z-index: 200;
+            backdrop-filter: blur(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .speech-caption-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -10px);
+        }
+
+        .caption-glow-orb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            animation: pulse-speaking 0.8s ease-in-out infinite alternate;
+        }
+
+        .caption-text {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(22, 21, 44, 0.9);
+            border-left: 4px solid var(--color-primary);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+            border-right: 1px solid var(--glass-border);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--glass-shadow);
+            animation: slide-in-left 0.3s ease-out;
+            min-width: 250px;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.success { border-left-color: var(--color-success); }
+        .toast.info { border-left-color: var(--color-secondary); }
+        .toast.warning { border-left-color: var(--color-warning); }
+        .toast.error { border-left-color: var(--color-accent); }
+
+        @keyframes slide-in-left {
+            0% { transform: translateX(100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notifications Area -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-microphone-lines"></i>
+            <span>VoiceCX AI</span>
+        </div>
+        <div class="badge-mode" id="dbModeBadge">
+            <i class="fa-solid fa-circle-dot"></i>
+            <span id="dbModeText">Initializing Database...</span>
+        </div>
+    </header>
+
+    <!-- Main Application Workspace -->
+    <main class="workspace">
+
+        <!-- Left Panel: Voice Hub Control -->
+        <div class="voice-hub">
+            
+            <!-- Voice Circle Sphere Glass Card -->
+            <div class="glass-card visualizer-container state-idle" id="visualizerCard">
+                <div class="aura-wrapper">
+                    <div class="aura-glow"></div>
+                    <div class="aura-ring"></div>
+                    <div class="aura-orb" id="orbBtn" title="Click to talk">
+                        <i class="fa-solid fa-microphone mic-icon" id="micIcon"></i>
+                    </div>
+                </div>
+                
+                <div class="status-badge" id="voiceStatusText">Voice Assistant</div>
+                <div class="status-desc" id="voiceStatusDesc">Click the orb or button below to speak</div>
+                
+                <!-- Controller button -->
+                <div class="control-panel" style="margin-top: 20px;">
+                    <button class="btn-mic" id="recordBtn">
+                        <i class="fa-solid fa-microphone"></i>
+                        <span>Start Speaking</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Speech-to-Text & Command Log -->
+            <div class="glass-card dialogue-panel">
+                <div class="dialogue-title">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Real-time Transcript</span>
+                </div>
+                
+                <div class="transcript-box" id="transcript">
+                    <span class="transcript-placeholder">Your voice transcription will appear here in real-time...</span>
+                </div>
+
+                <div class="dialogue-title" style="margin-top: 10px;">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Try saying</span>
+                </div>
+                
+                <div class="suggestions-container" id="suggestionsContainer">
+                    <div class="suggestion-chip" data-cmd="show me tech gadgets"><i class="fa-solid fa-magnifying-glass"></i> "Show all products"</div>
+                    <div class="suggestion-chip" data-cmd="do you have wireless earbuds"><i class="fa-solid fa-headphones"></i> "Show wireless earbuds"</div>
+                    <div class="suggestion-chip" data-cmd="add the smartwatch to my cart"><i class="fa-solid fa-cart-plus"></i> "Add smartwatch to cart"</div>
+                    <div class="suggestion-chip" data-cmd="what is in my cart"><i class="fa-solid fa-basket-shopping"></i> "What's in my cart?"</div>
+                    <div class="suggestion-chip" data-cmd="checkout my order"><i class="fa-solid fa-credit-card"></i> "Checkout"</div>
+                    <div class="suggestion-chip" data-cmd="clear my cart"><i class="fa-solid fa-trash-can"></i> "Clear cart"</div>
+                </div>
+            </div>
+
+            <!-- Backend Parser Debugger -->
+            <div class="glass-card debug-logger">
+                <div class="dialogue-title">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>Gemini Agent Logs</span>
+                </div>
+                
+                <div class="debug-grid" id="analysis">
+                    <div class="debug-item">
+                        <div class="debug-label">Detected Intent</div>
+                        <div class="debug-val info" id="intent">N/A</div>
+                    </div>
+                    <div class="debug-item">
+                        <div class="debug-label">Sentiment</div>
+                        <div class="debug-val success" id="sentiment">N/A</div>
+                    </div>
+                    <div class="debug-item">
+                        <div class="debug-label">Urgency Priority</div>
+                        <div class="debug-val info" id="priority">N/A</div>
+                    </div>
+                    <div class="debug-item">
+                        <div class="debug-label">Target Entity</div>
+                        <div class="debug-val warning" id="targetEntity">N/A</div>
+                    </div>
+                    <div class="debug-item debug-val-wide">
+                        <div class="debug-label">Executed Command Action</div>
+                        <div class="debug-val info" id="execAction" style="font-family: monospace;">N/A</div>
+                    </div>
+                    <div class="debug-item debug-val-wide">
+                        <div class="debug-label">AI Response Speech</div>
+                        <div class="debug-val" id="aiResponse" style="white-space: normal; line-height: 1.4; color: var(--text-secondary); max-height: 80px; overflow-y: auto;">
+                            No active response yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: E-Commerce Console -->
+        <div class="ecommerce-panel">
+            
+            <div class="ecom-header">
+                <div class="ecom-title">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <span>Tech Gadget Store</span>
+                </div>
+                
+                <!-- Category Filter Tabs -->
+                <div class="category-tabs" id="categoryTabs">
+                    <button class="tab-btn active" data-category="all">All</button>
+                    <button class="tab-btn" data-category="audio">Audio</button>
+                    <button class="tab-btn" data-category="wearables">Wearables</button>
+                    <button class="tab-btn" data-category="accessories">Charging</button>
+                    <button class="tab-btn" data-category="entertainment">Entertainment</button>
+                </div>
+            </div>
+
+            <!-- Ecom Inner Columns -->
+            <div class="ecom-content">
+                
+                <!-- Product grid container -->
+                <div class="product-grid" id="productGrid">
+                    <!-- Products will be generated dynamically by JS -->
+                </div>
+
+                <!-- Shopping Cart and Recent Order Logs -->
+                <div class="cart-sidebar">
+                    
+                    <!-- Shopping Cart Glass Card -->
+                    <div class="glass-card cart-card">
+                        <div class="cart-header">
+                            <div class="cart-title">
+                                <i class="fa-solid fa-shopping-cart" style="color: var(--color-secondary);"></i>
+                                <span>Shopping Cart</span>
+                            </div>
+                            <div class="cart-badge" id="cartBadge">0</div>
+                        </div>
+
+                        <!-- Cart Items -->
+                        <div class="cart-items-list" id="cartItemsList">
+                            <div class="cart-empty" id="cartEmptyState">
+                                <i class="fa-solid fa-cart-flatbed"></i>
+                                <span>Your cart is empty.<br>Ask the assistant to add items!</span>
+                            </div>
+                        </div>
+
+                        <!-- Summary footer -->
+                        <div class="cart-summary">
+                            <div class="summary-row">
+                                <span class="summary-label">Subtotal</span>
+                                <span class="summary-value" id="cartSubtotal">$0.00</span>
+                            </div>
+                            <button class="btn-checkout" id="checkoutBtn" disabled>
+                                <i class="fa-solid fa-cash-register"></i>
+                                <span>Place Order</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders Card -->
+                    <div class="glass-card orders-card">
+                        <div class="orders-title">
+                            <i class="fa-solid fa-truck-fast"></i>
+                            <span>Recent Voice Orders</span>
+                        </div>
+                        <div class="orders-list" id="ordersList">
+                            <div class="cart-empty" id="ordersEmptyState" style="padding: 10px 0; min-height: 80px;">
+                                <span>No orders placed yet.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Interactive Speech synthesis display caption bar -->
+    <div class="speech-caption-overlay" id="speechCaption">
+        <div class="caption-glow-orb"></div>
+        <div class="caption-text" id="captionText">Listening...</div>
+    </div>
+
+    <!-- Application Javascript Logic -->
+    <script src="app.js"></script>
+
+</body>
+</html>
