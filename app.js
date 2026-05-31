@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = "AQ.Ab8RN6KTSIARLKaMB3f2BlLzcC5gksyvV1MITZTi1C1-O9GE5g";
+const GEMINI_API_KEY = "API-KEY";
 
 // Catalog Seeding Data
 const INITIAL_PRODUCTS = [
